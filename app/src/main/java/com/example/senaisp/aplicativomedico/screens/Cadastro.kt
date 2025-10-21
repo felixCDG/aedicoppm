@@ -74,9 +74,14 @@ import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.senaisp.aplicativomedico.R
+import com.example.senaisp.aplicativomedico.model.RegistroMedico
+import com.example.senaisp.aplicativomedico.service.AzureUploadService.uploadImageToAzure
+import com.example.senaisp.aplicativomedico.service.Conexao
+import com.example.senaisp.aplicativomedico.service.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.await
 
 
@@ -135,19 +140,30 @@ fun Cadastroscreen(navegacao: NavHostController?) {
         mutableStateOf("")
     }
 
+    val selectedOptionId = remember { mutableStateOf<Int?>(null) }
+
+    var nomeState = remember {
+        mutableStateOf("")
+    }
+    var cpfState = remember {
+        mutableStateOf("")
+    }
+    var telefoneState = remember {
+        mutableStateOf("")
+    }
     var emailState = remember {
         mutableStateOf("")
     }
-    var senhaState = remember {
+    var CRM = remember {
         mutableStateOf("")
     }
-    var CsenhaState = remember {
-        mutableStateOf("")
-    }
+
 
 
     var mensagem by remember { mutableStateOf("") }
     var isErro by remember { mutableStateOf(false) }
+
+    val clienteApi = Conexao().getCadastroMedicoService()
 
 
     Box(modifier = Modifier
@@ -219,9 +235,9 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                             .verticalScroll(rememberScrollState()),
                     ) {
                         OutlinedTextField(
-                            value = emailState.value,
+                            value = nomeState.value,
                             onValueChange = {
-                                emailState.value = it
+                                nomeState.value = it
                             },
                             modifier = Modifier
                                 .fillMaxWidth(),
@@ -244,9 +260,9 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         OutlinedTextField(
-                            value = senhaState.value,
+                            value = emailState.value,
                             onValueChange = {
-                                senhaState.value = it
+                                emailState.value = it
                             },
                             modifier = Modifier
                                 .fillMaxWidth(),
@@ -269,59 +285,9 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         OutlinedTextField(
-                            value = senhaState.value,
+                            value = CRM.value,
                             onValueChange = {
-                                senhaState.value = it
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Senha"
-                                )
-                            },
-                            label = {
-                                Text("Senha")
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF)
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = CsenhaState.value,
-                            onValueChange = {
-                                CsenhaState.value = it
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Confirma senha"
-                                )
-                            },
-                            label = {
-                                Text("Comfirma senha")
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF)
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = emailState.value,
-                            onValueChange = {
-                                emailState.value = it
+                                CRM.value = it
                             },
                             modifier = Modifier
                                 .fillMaxWidth(),
@@ -344,9 +310,9 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         OutlinedTextField(
-                            value = emailState.value,
+                            value = cpfState.value,
                             onValueChange = {
-                                emailState.value = it
+                                cpfState.value = it
                             },
                             modifier = Modifier
                                 .fillMaxWidth(),
@@ -369,9 +335,9 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         OutlinedTextField(
-                            value = senhaState.value,
+                            value = telefoneState.value,
                             onValueChange = {
-                                senhaState.value = it
+                                telefoneState.value = it
                             },
                             modifier = Modifier
                                 .fillMaxWidth(),
@@ -393,30 +359,6 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                             ),
                         )
                         Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = CsenhaState.value,
-                            onValueChange = {
-                                CsenhaState.value = it
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Confirma senha"
-                                )
-                            },
-                            label = {
-                                Text("Data de Nascimento")
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF)
-                            ),
-                        )
                         Spacer(modifier = Modifier.height(10.dp))
                         OutlinedTextField(
                             value = pictureState.value,
@@ -504,6 +446,7 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                                 text = { Text("Masculino") },
                                 onClick = {
                                     selectedOption.value = "Masculino"
+                                    selectedOptionId.value = 1
                                     expandedMenu.value = false
                                 }
                             )
@@ -511,6 +454,7 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                                 text = { Text("Feminino") },
                                 onClick = {
                                     selectedOption.value = "Feminino"
+                                    selectedOptionId.value = 2
                                     expandedMenu.value = false
                                 }
                             )
@@ -521,30 +465,68 @@ fun Cadastroscreen(navegacao: NavHostController?) {
                                 .fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+
+                            val context = LocalContext.current
+
                             Button(
                                 onClick = {
-                                    /*val cliente = CadastroUser(
-                                id = 0,
-                                email = emailState.value,
-                                senha = senhaState.value,
-                                id_tipo = 1,
-                            )
+                                    if (imageUri != null) {
+                                        GlobalScope.launch(Dispatchers.IO) {
+                                            try {
+                                                // 1️⃣ Faz o upload e pega a URL
+                                                val urlRetornada = uploadImageToAzure(context, imageUri!!)
 
-                            Log.i("Cadastro", " Enviando dados para API: $cliente")
+                                                withContext(Dispatchers.Main) {
+                                                    pictureState.value = urlRetornada // atualiza o state
+                                                }
 
-                            GlobalScope.launch(Dispatchers.IO) {
-                                try {
-                                    val cadastroNovo = clienteApi.cadastrarUsuario(cliente).await()
+                                                val idUser = SessionManager.getUserId(context)
 
-                                    // Mensagem de sucesso no Logcat
-                                    Log.i("Cadastro", "Cadastro realizado com sucesso! Dados: $cadastroNovo")
+                                                // 2️⃣ Cria o objeto com a URL correta
+                                                val cliente = RegistroMedico(
+                                                    id_medico = 0,
+                                                    nome = nomeState.value,
+                                                    email = emailState.value,
+                                                    cpf = cpfState.value,
+                                                    telefone = telefoneState.value,
+                                                    foto = urlRetornada, // <-- usa a URL retornada
+                                                    crm = CRM.value,
+                                                    idSexo = selectedOptionId.value ?: 0,
+                                                    id_user = 1
+                                                )
 
-                                } catch (e: Exception) {
-                                    // Mensagem de erro no Logcat
-                                    Log.e("Cadastro", "Erro ao cadastrar: ${e.message}")
-                                }
-                            }
-                            navegacao?.navigate("login")*/
+
+                                                // 3️⃣ Loga o JSON que será enviado
+                                                val gson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
+                                                val jsonEnviado = gson.toJson(cliente)
+                                                Log.i("API_CADASTRO", "📦 JSON ENVIADO PARA API:\n$jsonEnviado")
+
+
+                                                val response = clienteApi.cadastrarResponsavel(cliente).await()
+                                                Log.i("API_CADASTRO", "Resposta: $response")
+                                                Log.i("API_CADASTRO", "Resposta completa: $response")
+                                                Log.i("API_CADASTRO", "Mensagem: ${response.message}")
+                                                Log.i("API_CADASTRO", "ID do usuário: ${response.data.id_user}")
+
+                                                // Salva o ID para usar depois
+                                                SessionManager.saveUserId(context = context, userId = response.data.id_user)
+                                                // Salva o ID do responsável no SessionManager
+                                                SessionManager.saveMedicoId(context, response.data.id_medico)
+
+                                                withContext(Dispatchers.Main) {
+                                                    navegacao?.navigate("perfil")
+                                                }
+
+                                            } catch (e: Exception) {
+                                                Log.e("API_CADASTRO", "Erro: ${e.message}")
+                                                withContext(Dispatchers.Main) {
+                                                    navegacao?.navigate("perfil")
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        Log.e("UPLOAD", "Nenhuma imagem selecionada")
+                                    }
                                 },
                                 colors = ButtonDefaults.buttonColors(Color(0xFFAEDCFF)),
                                 shape = RoundedCornerShape(30.dp),

@@ -1,9 +1,9 @@
 package com.example.senaisp.aplicativomedico.model
 
-
 import com.google.gson.annotations.SerializedName
 
-data class CadastroMedicData(
+data class RegistroMedico(
+
     val id_medico: Int = 0,
     val nome: String = "",
     val email: String = "",
@@ -13,18 +13,5 @@ data class CadastroMedicData(
     val foto: String = "",
     @SerializedName("id_sexo") var idSexo: Int = 0,
     val id_user: Int =1,
-    val usuario: List<LoginUserData>
-)
 
-data class ResponseCadastroMedico(
-    val status: Boolean,
-    val status_code: Int,
-    val message: String,
-    val data: CadastroMedicData
-)
-
-data class ResponsePerfilMedico(
-    val message: String,
-    val status_code: Int,
-    val medico : List<CadastroMedicData>
 )

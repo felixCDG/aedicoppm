@@ -1,5 +1,6 @@
 package com.example.senaisp.aplicativomedico.service
 
+
 import android.content.Context
 import android.net.Uri
 import okhttp3.MediaType.Companion.toMediaType
@@ -19,9 +20,9 @@ object AzureUploadService {
         uri: Uri
     ): String {
         // 1) Definições de container/account e SAS
-        val accountName = "asei"
+        val accountName = "tccbebe"
         val containerName = "foto"
-        val sasToken = "sp=racwdli&st=2025-06-12T17:12:24Z&se=2025-06-19T01:12:24Z&sv=2024-11-04&sr=c&sig=uF4r1CjXznKe6M2wztgcpYW8lkxMxlljIW6Hy3Vk8w4%3D"
+        val sasToken = "sv=2024-11-04&ss=b&srt=sco&sp=rwdlactfx&se=2025-12-12T09:07:11Z&st=2025-10-09T00:52:11Z&spr=https&sig=mJr7tOMHZTE4iiOF4V7nFVyuEnQhqaRNTkCurWHb3hc%3D"
 
         // 2) Gera nome único
         val fileName = "${UUID.randomUUID()}.jpg"
@@ -37,7 +38,7 @@ object AzureUploadService {
         // 5) Prepara requisição
         val client = OkHttpClient()
         val mediaType = "image/jpeg".toMediaType()
-        val body = RequestBody.Companion.create(mediaType, bytes)
+        val body = RequestBody.create(mediaType, bytes)
         val request = Request.Builder()
             .url(uploadUrl)
             .addHeader("x-ms-blob-type", "BlockBlob")      // ← header obrigatório

@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.senaisp.aplicativomedico.screens.Cadastroscreen
 import com.example.senaisp.aplicativomedico.screens.Loginscreen
+import com.example.senaisp.aplicativomedico.screens.PerfilMedic
 import com.example.senaisp.aplicativomedico.ui.theme.AplicativoMedicoTheme
 
 
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
             ){
                 composable(route = "login"){ Loginscreen(navegacao) }
                 composable(route = "cadastro"){ Cadastroscreen(navegacao) }
+                composable(route = "perfil"){ PerfilMedic(navegacao) }
             }
 
         }
