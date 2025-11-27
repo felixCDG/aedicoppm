@@ -39,6 +39,21 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.TextField
 import androidx.navigation.NavHostController
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.senaisp.aplicativomedico.service.Conexao
+import com.example.senaisp.aplicativomedico.service.ChamadaRequest
+import com.example.senaisp.aplicativomedico.service.ChamadaService
+import com.example.senaisp.aplicativomedico.service.SessionManager
+import okhttp3.ResponseBody
+import retrofit2.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URLEncoder
+import android.content.Context
 
 @Composable
 fun SalaConsulta(navegacao: NavHostController?) {
@@ -146,6 +161,13 @@ fun SalaConsulta(navegacao: NavHostController?) {
 
 @Composable
 fun CreateCallScreen(navegacao: NavHostController?) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var roomName by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Reuse the existing top header
         SalaConsulta(navegacao)
@@ -169,10 +191,9 @@ fun CreateCallScreen(navegacao: NavHostController?) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    val roomName = remember { mutableStateOf("") }
                     TextField(
-                        value = roomName.value,
-                        onValueChange = { if (it.length <= 100) roomName.value = it },
+                        value = roomName,
+                        onValueChange = { if (it.length <= 100) roomName = it },
                         placeholder = { Text("Nome da sala") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
@@ -181,12 +202,60 @@ fun CreateCallScreen(navegacao: NavHostController?) {
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Button(
-                        onClick = { navegacao?.navigate("sala_nova") },
+                        onClick = {
+                            // Basic validation
+                            error = ""
+                            if (roomName.isBlank()) {
+                                error = "Nome da sala obrigatório"
+                                return@Button
+                            }
+
+                            // Trigger network call
+                            loading = true
+                            scope.launch(Dispatchers.IO) {
+                                // Read token from SessionManager
+                                val bearer = SessionManager.getBearerToken(context)
+
+                                val chamadaService = Conexao().getChamadaService()
+                                val requestBody = ChamadaRequest(roomName)
+                                try {
+                                    val response: Response<ResponseBody> = chamadaService.criarChamada(bearer, requestBody).execute()
+
+                                    if (response.isSuccessful) {
+                                        withContext(Dispatchers.Main) {
+                                            navegacao?.navigate("video/${URLEncoder.encode(roomName, "utf-8")}")
+                                        }
+                                    } else {
+                                        val errorText = response.errorBody()?.string()
+                                        withContext(Dispatchers.Main) {
+                                            error = "Erro ao criar chamada. (Código ${response.code()})"
+                                            if (!errorText.isNullOrBlank()) {
+                                                error += " - ${errorText.take(200)}"
+                                            }
+                                        }
+                                    }
+                                } catch (_: Exception) {
+                                    withContext(Dispatchers.Main) {
+                                        error = "Erro ao conectar ao servidor."
+                                    }
+                                } finally {
+                                    withContext(Dispatchers.Main) {
+                                        loading = false
+                                    }
+                                }
+                            }
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F6BE4)),
                         shape = RoundedCornerShape(24.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !loading
                     ) {
-                        Text(text = "Criar Chamada", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(text = if (loading) "Criando..." else "Criar Chamada", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    if (error.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = error, color = Color.Red)
                     }
                 }
             }

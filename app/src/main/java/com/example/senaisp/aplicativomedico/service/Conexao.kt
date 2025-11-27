@@ -6,7 +6,7 @@ import kotlin.jvm.java
 
 class Conexao {
 
-    private val BASE_URL = "http://10.0.2.2:3030/v1/sosbaby/"
+    private val BASE_URL = "https://backend-sosbaby.onrender.com/v1/sosbaby/"
 
     private val conexao= Retrofit
         .Builder()
@@ -27,7 +27,13 @@ class Conexao {
         return conexao.create(CadastroService::class.java)
     }
 
+    fun getChamadaService(): ChamadaService {
+        return conexao.create(ChamadaService::class.java)
+    }
 
+    fun getTokenService(): TokenService {
+        return conexao.create(TokenService::class.java)
+    }
 
 
 }
