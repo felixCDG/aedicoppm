@@ -14,9 +14,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.senaisp.aplicativomedico.screens.CadastroUser
 import com.example.senaisp.aplicativomedico.screens.Cadastroscreen
+import com.example.senaisp.aplicativomedico.screens.Chamada
 import com.example.senaisp.aplicativomedico.screens.Loginscreen
 import com.example.senaisp.aplicativomedico.screens.PerfilMedic
+import com.example.senaisp.aplicativomedico.screens.SalaConsulta
 import com.example.senaisp.aplicativomedico.ui.theme.AplicativoMedicoTheme
 
 
@@ -29,11 +32,13 @@ class MainActivity : ComponentActivity() {
             val navegacao = rememberNavController()
             NavHost(
                 navController = navegacao,
-                startDestination = "cadastro"
+                startDestination = "chamada"
             ){
                 composable(route = "login"){ Loginscreen(navegacao) }
-                composable(route = "cadastro"){ Cadastroscreen(navegacao) }
+                composable(route = "cadastro"){ CadastroUser(navegacao) }
                 composable(route = "perfil"){ PerfilMedic(navegacao) }
+                composable(route = "consulta"){ SalaConsulta(navegacao) }
+                composable(route = "chamada"){ Chamada(navegacao) }
             }
 
         }

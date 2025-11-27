@@ -83,4 +83,10 @@ dependencies {
 // última versão estável
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
 
+    // CameraX dependencies for camera preview
+    implementation("androidx.camera:camera-core:1.2.3")
+    implementation("androidx.camera:camera-camera2:1.2.3")
+    implementation("androidx.camera:camera-lifecycle:1.2.3")
+    implementation("androidx.camera:camera-view:1.2.3")
+
 }

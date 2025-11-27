@@ -19,6 +19,14 @@ class Conexao {
         return conexao.create(CadastroMedico::class.java)
     }
 
+    fun getLoginService(): LoginService{
+        return conexao.create(LoginService::class.java)
+    }
+
+    fun getCadastroService(): CadastroService{
+        return conexao.create(CadastroService::class.java)
+    }
+
 
 
 

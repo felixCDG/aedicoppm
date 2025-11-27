@@ -12,6 +12,6 @@ data class RegistroMedico(
     val cpf: String = "",
     val foto: String = "",
     @SerializedName("id_sexo") var idSexo: Int = 0,
-    val id_user: Int =1,
+    val id_user: Int,
 
 )

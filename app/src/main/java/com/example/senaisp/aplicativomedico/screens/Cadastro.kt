@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -66,6 +67,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -111,7 +113,6 @@ fun CurvedTopShape() = GenericShape { size, _ ->
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Cadastroscreen(navegacao: NavHostController?) {
-
 
     var expandedTipoId by remember { mutableStateOf(false) }
     var selectTipoId by remember { mutableStateOf("") }
@@ -165,392 +166,364 @@ fun Cadastroscreen(navegacao: NavHostController?) {
 
     val clienteApi = Conexao().getCadastroMedicoService()
 
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0xFFAEDCFF))) {
-
-        Column(
-            modifier = Modifier
-                .zIndex(1f)
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                modifier = Modifier
-                    .padding(top = 27.dp),
-                text = "Cadastre-se",
-                color = Color.Black,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 44.sp
-            )
+    // --- helper formatting functions (string-based) ---
+    fun formatarNome(text: String): String {
+        return text.split(" ").joinToString(" ") { palavra ->
+            if (palavra.isNotEmpty()) palavra.lowercase().replaceFirstChar { it.uppercase() } else palavra
         }
+    }
+
+    fun formatarData(text: String): String {
+        val digitos = text.filter { it.isDigit() }
+        return when {
+            digitos.length <= 2 -> digitos
+            digitos.length <= 4 -> "${digitos.substring(0, 2)}/${digitos.substring(2)}"
+            digitos.length <= 8 -> "${digitos.substring(0, 2)}/${digitos.substring(2, 4)}/${digitos.substring(4)}"
+            else -> "${digitos.substring(0, 2)}/${digitos.substring(2, 4)}/${digitos.substring(4, 8)}"
+        }
+    }
+
+    fun converterDataParaBanco(dataFormatada: String): String {
+        if (dataFormatada.length == 10) {
+            val partes = dataFormatada.split("/")
+            if (partes.size == 3) {
+                return "${partes[2]}/${partes[1]}/${partes[0]}"
+            }
+        }
+        return dataFormatada
+    }
+
+    fun formatarCPF(text: String): String {
+        val digitos = text.filter { it.isDigit() }
+        return when {
+            digitos.length <= 3 -> digitos
+            digitos.length <= 6 -> "${digitos.substring(0, 3)}.${digitos.substring(3)}"
+            digitos.length <= 9 -> "${digitos.substring(0, 3)}.${digitos.substring(3, 6)}.${digitos.substring(6)}"
+            digitos.length <= 11 -> "${digitos.substring(0, 3)}.${digitos.substring(3, 6)}.${digitos.substring(6, 9)}-${digitos.substring(9)}"
+            else -> "${digitos.substring(0, 3)}.${digitos.substring(3, 6)}.${digitos.substring(6, 9)}-${digitos.substring(9, 11)}"
+        }
+    }
+
+    fun formatarTelefone(text: String): String {
+        val digitos = text.filter { it.isDigit() }
+        return when {
+            digitos.length <= 2 -> if (digitos.isNotEmpty()) "($digitos" else ""
+            digitos.length <= 7 -> "(${digitos.substring(0, 2)}) ${digitos.substring(2)}"
+            digitos.length <= 11 -> "(${digitos.substring(0, 2)}) ${digitos.substring(2, 7)}-${digitos.substring(7)}"
+            else -> "(${digitos.substring(0, 2)}) ${digitos.substring(2, 7)}-${digitos.substring(7, 11)}"
+        }
+    }
+
+    fun formatarCEP(text: String): String {
+        val digitos = text.filter { it.isDigit() }
+        return when {
+            digitos.length <= 5 -> digitos
+            digitos.length <= 8 -> "${digitos.substring(0, 5)}-${digitos.substring(5)}"
+            else -> "${digitos.substring(0, 5)}-${digitos.substring(5, 8)}"
+        }
+    }
+
+
+    Row(modifier = Modifier.fillMaxSize()) {
+        // Left gradient panel
+        Box(
+            modifier = Modifier
+                .weight(1.2f)
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFAEDCFF),
+                            Color(0xFF2C91DE)
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Cadastre-se\nMédico",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 30.sp
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { navegacao?.navigate("login") },
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Voltar",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Voltar para o Início",
+                        color = Color.White,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+
+        // Right form panel
         Column(
             modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Bottom
+                .weight(1.4f)
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(20.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.Top
         ) {
-            Card(
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.LocalHospital,
+                    contentDescription = "Médico",
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.Black
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Cadastro Médico",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(Color(0xFF2C91DE))) {}
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Nome
+            Text(text = "Nome completo *", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = nomeState.value,
+                onValueChange = { nomeState.value = formatarNome(it) },
+                placeholder = { Text("Digite o nome completo", fontSize = 14.sp, color = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    unfocusedBorderColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Email
+            Text(text = "Email", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = emailState.value,
+                onValueChange = { emailState.value = it },
+                placeholder = { Text("exemplo@email.com", fontSize = 14.sp, color = Color.Gray) },
+                leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = "Email", tint = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    unfocusedBorderColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // CRM
+            Text(text = "CRM", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = CRM.value,
+                onValueChange = { CRM.value = it },
+                placeholder = { Text("Digite seu CRM", fontSize = 14.sp, color = Color.Gray) },
+                leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = "CRM", tint = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    unfocusedBorderColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // CPF
+            Text(text = "CPF", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = cpfState.value,
+                onValueChange = { cpfState.value = formatarCPF(it) },
+                placeholder = { Text("000.000.000-00", fontSize = 14.sp, color = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    unfocusedBorderColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Telefone
+            Text(text = "Telefone", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = telefoneState.value,
+                onValueChange = { telefoneState.value = formatarTelefone(it) },
+                placeholder = { Text("(00) 00000-0000", fontSize = 14.sp, color = Color.Gray) },
+                leadingIcon = { Icon(imageVector = Icons.Default.Phone, contentDescription = "Telefone", tint = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    unfocusedBorderColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Foto upload area
+            Text(text = "Upload de arquivos", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(823.dp),
-                shape = CurvedTopShape(),// aplica o shape
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFFFFFFF)
-                )
+                    .height(120.dp)
+                    .border(2.dp, Color.Gray, RoundedCornerShape(8.dp))
+                    .clickable { pickImageLauncher.launch("image/*") },
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier
-                        .padding(20.dp)
-                        .fillMaxSize(),
-                ) {
-                    Spacer(modifier = Modifier.height(90.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        IconButton(
-                            onClick = {}
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.LocalHospital,
-                                contentDescription = "",
-                                modifier = Modifier
-                                    .size(400.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier,)
-                        Text(
-                            modifier = Modifier
-                                .padding(top = 12.dp),
-                            text = "Medico",
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 28.sp
-                        )
-                    }
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        OutlinedTextField(
-                            value = nomeState.value,
-                            onValueChange = {
-                                nomeState.value = it
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Email"
-                                )
-                            },
-                            label = {
-                                Text("Nome")
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF)
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = emailState.value,
-                            onValueChange = {
-                                emailState.value = it
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Senha"
-                                )
-                            },
-                            label = {
-                                Text("Email")
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF)
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = CRM.value,
-                            onValueChange = {
-                                CRM.value = it
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Email"
-                                )
-                            },
-                            label = {
-                                Text("CRM")
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF)
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = cpfState.value,
-                            onValueChange = {
-                                cpfState.value = it
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Email"
-                                )
-                            },
-                            label = {
-                                Text("CPF")
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF)
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = telefoneState.value,
-                            onValueChange = {
-                                telefoneState.value = it
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Senha"
-                                )
-                            },
-                            label = {
-                                Text("Telefone")
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF)
-                            ),
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = pictureState.value,
-                            onValueChange = { },
-                            shape = RoundedCornerShape(20.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                disabledBorderColor = Color(0xFF2C91DE), // 👈 garante igual
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF),
-                                disabledContainerColor = Color(0x65AEDCFF) // 👈 garante igual
-                            ),
-
-                            label = {
-                                Text(
-                                    text = "Foto do Medico",
-                                    fontSize = 16.sp,
-                                    color = Color(0xFF000000)
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Image,
-                                    contentDescription = "",
-                                    tint = Color(0xFF000000),
-                                    modifier = Modifier
-                                        .padding(start = 10.dp)
-                                        .size(40.dp)
-                                )
-                            },
-                            enabled = false,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    pickImageLauncher.launch("image/*")
-                                }
-                        )
-                        imageUri?.let { uri ->
-                            AsyncImage(
-                                model = uri,
-                                contentDescription = "Imagem Selecionada",
-                                modifier = Modifier
-                                    .padding(vertical = 10.dp, horizontal = 15.dp)
-                                    .size(150.dp)
-                                    .border(2.dp, Color(0x80241508))
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(18.dp))
-                        OutlinedTextField(
-                            value = selectedOption.value,
-                            onValueChange = {},
-                            readOnly = true,
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            shape = RoundedCornerShape(30.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2C91DE),
-                                unfocusedBorderColor = Color(0xFF2C91DE),
-                                disabledBorderColor = Color(0xFF2C91DE), // 👈 garante igual
-                                focusedContainerColor = Color(0x65AEDCFF),
-                                unfocusedContainerColor = Color(0x65AEDCFF),
-                                disabledContainerColor = Color(0x65AEDCFF) // 👈 garante igual
-                            ),
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    expandedMenu.value = !expandedMenu.value
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowDropDown,
-                                        contentDescription = "Abrir menu"
-                                    )
-                                }
-                            },
-                            placeholder = {
-                                Text("Selecione o sexo")
-                            },
-                        )
-                        DropdownMenu(
-                            expanded = expandedMenu.value,
-                            onDismissRequest = { expandedMenu.value = false },
-                            modifier = Modifier.background(Color(0xFFFFFFFF))
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Masculino") },
-                                onClick = {
-                                    selectedOption.value = "Masculino"
-                                    selectedOptionId.value = 1
-                                    expandedMenu.value = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Feminino") },
-                                onClick = {
-                                    selectedOption.value = "Feminino"
-                                    selectedOptionId.value = 2
-                                    expandedMenu.value = false
-                                }
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(44.dp))
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-
-                            val context = LocalContext.current
-
-                            Button(
-                                onClick = {
-                                    if (imageUri != null) {
-                                        GlobalScope.launch(Dispatchers.IO) {
-                                            try {
-                                                // 1️⃣ Faz o upload e pega a URL
-                                                val urlRetornada = uploadImageToAzure(context, imageUri!!)
-
-                                                withContext(Dispatchers.Main) {
-                                                    pictureState.value = urlRetornada // atualiza o state
-                                                }
-
-                                                val idUser = SessionManager.getUserId(context)
-
-                                                // 2️⃣ Cria o objeto com a URL correta
-                                                val cliente = RegistroMedico(
-                                                    id_medico = 0,
-                                                    nome = nomeState.value,
-                                                    email = emailState.value,
-                                                    cpf = cpfState.value,
-                                                    telefone = telefoneState.value,
-                                                    foto = urlRetornada, // <-- usa a URL retornada
-                                                    crm = CRM.value,
-                                                    idSexo = selectedOptionId.value ?: 0,
-                                                    id_user = 1
-                                                )
-
-
-                                                // 3️⃣ Loga o JSON que será enviado
-                                                val gson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
-                                                val jsonEnviado = gson.toJson(cliente)
-                                                Log.i("API_CADASTRO", "📦 JSON ENVIADO PARA API:\n$jsonEnviado")
-
-
-                                                val response = clienteApi.cadastrarResponsavel(cliente).await()
-                                                Log.i("API_CADASTRO", "Resposta: $response")
-                                                Log.i("API_CADASTRO", "Resposta completa: $response")
-                                                Log.i("API_CADASTRO", "Mensagem: ${response.message}")
-                                                Log.i("API_CADASTRO", "ID do usuário: ${response.data.id_user}")
-
-                                                // Salva o ID para usar depois
-                                                SessionManager.saveUserId(context = context, userId = response.data.id_user)
-                                                // Salva o ID do responsável no SessionManager
-                                                SessionManager.saveMedicoId(context, response.data.id_medico)
-
-                                                withContext(Dispatchers.Main) {
-                                                    navegacao?.navigate("perfil")
-                                                }
-
-                                            } catch (e: Exception) {
-                                                Log.e("API_CADASTRO", "Erro: ${e.message}")
-                                                withContext(Dispatchers.Main) {
-                                                    navegacao?.navigate("perfil")
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        Log.e("UPLOAD", "Nenhuma imagem selecionada")
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(Color(0xFFAEDCFF)),
-                                shape = RoundedCornerShape(30.dp),
-                                modifier = Modifier
-                                    .width(270.dp)
-                                    .border(
-                                        width = 2.dp, // 👈 tamanho da borda
-                                        color = Color(0xFF2C91DE),
-                                        shape = RoundedCornerShape(38.dp)
-                                    ),
-                            ) {
-                                Text(
-                                    text = "CADASTRAR",
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(3.dp))
-
-                        }
+                if (imageUri != null) {
+                    AsyncImage(
+                        model = imageUri,
+                        contentDescription = "Imagem Selecionada",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(imageVector = Icons.Default.Person, contentDescription = "Upload", modifier = Modifier.size(40.dp), tint = Color(0xFF2C91DE))
+                        Text(text = "Clique para fazer upload", fontSize = 12.sp, color = Color.Gray)
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Sexo dropdown
+            OutlinedTextField(
+                value = selectedOption.value,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(25.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    unfocusedBorderColor = Color.Gray
+                ),
+                trailingIcon = {
+                    IconButton(onClick = { expandedMenu.value = !expandedMenu.value }) {
+                        Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "Abrir menu", tint = Color.Gray)
+                    }
+                },
+                placeholder = { Text("Selecione o sexo", fontSize = 14.sp, color = Color.Gray) }
+            )
+
+            DropdownMenu(expanded = expandedMenu.value, onDismissRequest = { expandedMenu.value = false }, modifier = Modifier.background(Color.White)) {
+                DropdownMenuItem(text = { Text("Masculino") }, onClick = {
+                    selectedOption.value = "Masculino"
+                    selectedOptionId.value = 1
+                    expandedMenu.value = false
+                })
+                DropdownMenuItem(text = { Text("Feminino") }, onClick = {
+                    selectedOption.value = "Feminino"
+                    selectedOptionId.value = 2
+                    expandedMenu.value = false
+                })
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    if (imageUri != null) {
+                        GlobalScope.launch(Dispatchers.IO) {
+                            try {
+                                val urlRetornada = uploadImageToAzure(context, imageUri!!)
+
+                                withContext(Dispatchers.Main) {
+                                    pictureState.value = urlRetornada
+                                }
+
+                                val idUser = SessionManager.getUserId(context)
+
+                                val cliente = RegistroMedico(
+                                    id_medico = 0,
+                                    nome = nomeState.value,
+                                    email = emailState.value,
+                                    cpf = cpfState.value,
+                                    telefone = telefoneState.value,
+                                    foto = urlRetornada,
+                                    crm = CRM.value,
+                                    idSexo = selectedOptionId.value ?: 0,
+                                    id_user = idUser
+                                )
+
+                                val gson = com.google.gson.GsonBuilder().setPrettyPrinting().create()
+                                val jsonEnviado = gson.toJson(cliente)
+                                Log.i("API_CADASTRO", "📦 JSON ENVIADO PARA API:\n$jsonEnviado")
+
+                                val response = clienteApi.cadastrarResponsavel(cliente).await()
+                                Log.i("API_CADASTRO", "Resposta: $response")
+
+                                SessionManager.saveUserId(context = context, userId = response.data.id_user)
+                                SessionManager.saveMedicoId(context, response.data.id_medico)
+
+                                withContext(Dispatchers.Main) {
+                                    navegacao?.navigate("perfil")
+                                }
+
+                            } catch (e: Exception) {
+                                Log.e("API_CADASTRO", "Erro: ${e.message}")
+                                withContext(Dispatchers.Main) {
+                                    navegacao?.navigate("perfil")
+                                }
+                            }
+                        }
+                    } else {
+                        Log.e("UPLOAD", "Nenhuma imagem selecionada")
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(Color(0xFFAEDCFF)),
+                shape = RoundedCornerShape(25.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text(text = "CADASTRAR", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
         }
     }
 }

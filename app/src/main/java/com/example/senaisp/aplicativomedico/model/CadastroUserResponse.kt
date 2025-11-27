@@ -1,16 +1,16 @@
 package com.example.senaisp.aplicativomedico.model
 
-data class LoginUserData(
+
+data class CadastroUserData(
     val id_user: Int,
     val email: String,
     val senha: String,
-    val id_tipo: Int = 4
+    val id_tipo: Int
 )
 
-data class ResponseLoginUser(
+data class ResponseCadastroUser(
     val status: Boolean,
     val status_code: Int,
     val message: String,
-    val data: LoginUserData,
-    val token: String
+    val data: CadastroUserData
 )
