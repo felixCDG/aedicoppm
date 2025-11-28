@@ -201,57 +201,51 @@ fun CreateCallScreen(navegacao: NavHostController?) {
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    Button(
-                        onClick = {
-                            // Basic validation
-                            error = ""
-                            if (roomName.isBlank()) {
-                                error = "Nome da sala obrigatório"
-                                return@Button
-                            }
+                    // imports omitidos — mantenha os mesmos que você já usa
+                        Button(
+                            onClick = {
+                                error = ""
+                                if (roomName.isBlank()) {
+                                    error = "Nome da sala obrigatório"
+                                    return@Button
+                                }
 
-                            // Trigger network call
-                            loading = true
-                            scope.launch(Dispatchers.IO) {
-                                // Read token from SessionManager
-                                val bearer = SessionManager.getBearerToken(context)
-
-                                val chamadaService = Conexao().getChamadaService()
-                                val requestBody = ChamadaRequest(roomName)
-                                try {
-                                    val response: Response<ResponseBody> = chamadaService.criarChamada(bearer, requestBody).execute()
-
-                                    if (response.isSuccessful) {
-                                        withContext(Dispatchers.Main) {
-                                            navegacao?.navigate("video/${URLEncoder.encode(roomName, "utf-8")}")
-                                        }
-                                    } else {
-                                        val errorText = response.errorBody()?.string()
-                                        withContext(Dispatchers.Main) {
-                                            error = "Erro ao criar chamada. (Código ${response.code()})"
-                                            if (!errorText.isNullOrBlank()) {
-                                                error += " - ${errorText.take(200)}"
+                                loading = true
+                                scope.launch(Dispatchers.IO) {
+                                    val bearer = SessionManager.getBearerToken(context)
+                                    val chamadaService = Conexao().getChamadaService()
+                                    val requestBody = ChamadaRequest(roomName)
+                                    try {
+                                        val response = chamadaService.criarChamada(bearer, requestBody).execute()
+                                        if (response.isSuccessful) {
+                                            val body = response.body()
+                                            val nomeSala = body?.data?.nomeChamada ?: roomName
+                                            withContext(Dispatchers.Main) {
+                                                // Navega para a tela de vídeo passando nome da sala codificado
+                                                navegacao?.navigate("video/${URLEncoder.encode(nomeSala, "utf-8")}")
+                                            }
+                                        } else {
+                                            val errorText = response.errorBody()?.string()
+                                            withContext(Dispatchers.Main) {
+                                                error = "Erro ao criar chamada. (Código ${response.code()})" +
+                                                        (if (!errorText.isNullOrBlank()) " - ${errorText.take(200)}" else "")
                                             }
                                         }
-                                    }
-                                } catch (_: Exception) {
-                                    withContext(Dispatchers.Main) {
-                                        error = "Erro ao conectar ao servidor."
-                                    }
-                                } finally {
-                                    withContext(Dispatchers.Main) {
-                                        loading = false
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            error = "Erro ao conectar ao servidor: ${e.message}"
+                                        }
+                                    } finally {
+                                        withContext(Dispatchers.Main) {
+                                            loading = false
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F6BE4)),
-                        shape = RoundedCornerShape(24.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !loading
-                    ) {
-                        Text(text = if (loading) "Criando..." else "Criar Chamada", color = Color.White, fontWeight = FontWeight.Bold)
+                            },
+                        ) {
+                        Text(text = if (loading) "Criando..." else "Criar Chamada", )
                     }
+
 
                     if (error.isNotBlank()) {
                         Spacer(modifier = Modifier.height(8.dp))

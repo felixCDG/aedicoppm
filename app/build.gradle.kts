@@ -88,6 +88,7 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.2.3")
     implementation("androidx.camera:camera-lifecycle:1.2.3")
     implementation("androidx.camera:camera-view:1.2.3")
+    implementation("com.twilio:video-android:7.9.1")
 
     // Twilio SDK removed — integration reverted. Add it back only if you want to enable native Twilio.
 

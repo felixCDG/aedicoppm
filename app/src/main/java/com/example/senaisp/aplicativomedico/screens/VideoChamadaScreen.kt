@@ -1,6 +1,7 @@
 package com.example.senaisp.aplicativomedico.screens
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,7 +37,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import com.google.gson.JsonElement
+import com.twilio.video.* // Twilio SDK
+import java.lang.Exception
+import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import com.twilio.video.ConnectOptions
+import com.twilio.video.RemoteParticipant
+import com.twilio.video.Room
+import com.twilio.video.TwilioException
+import com.twilio.video.Video
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) {
     val context = LocalContext.current
@@ -49,11 +64,17 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var hasCameraPermission by remember { mutableStateOf(false) }
 
-    var identity by remember { mutableStateOf<String?>(null) }
+
+    var jwtToken by remember { mutableStateOf<String?>(null) }
+    var identityState by remember { mutableStateOf<String?>(null) }
     var serverRoom by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(false) }
+    var loading by mutableStateOf(false)
+
+
 
     // Preview da câmera
+    val remotePreviewView = remember { PreviewView(context) }
+
     val previewView = remember { PreviewView(context) }
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
 
@@ -108,6 +129,69 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
         }
     }
 
+
+
+        var currentRoom: Room? = null
+
+        fun connectToTwilio(jwt: String, roomName: String, identity: String? = null) {
+            try {
+                isConnecting = true
+
+                val connectOptions = ConnectOptions.Builder(jwt)
+                    .roomName(roomName)
+                    .build()
+
+                val roomListener = object : Room.Listener {
+                    override fun onConnected(room: Room) {
+                        isConnected = true
+                        isConnecting = false
+                        currentRoom = room
+                    }
+
+                    override fun onConnectFailure(room: Room, e: TwilioException) {
+                        isConnected = false
+                        isConnecting = false
+                        errorMessage = "Falha ao conectar: ${e.message}"
+                    }
+
+                    override fun onReconnecting(
+                        room: Room,
+                        twilioException: TwilioException
+                    ) {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun onReconnected(room: Room) {
+                        TODO("Not yet implemented")
+                    }
+
+                    override fun onDisconnected(room: Room, e: TwilioException?) {
+                        isConnected = false
+                        isConnecting = false
+                        currentRoom = null
+                    }
+
+                    override fun onParticipantConnected(room: Room, participant: RemoteParticipant) {}
+                    override fun onParticipantDisconnected(room: Room, participant: RemoteParticipant) {}
+                    override fun onRecordingStarted(room: Room) {}
+                    override fun onRecordingStopped(room: Room) {}
+                }
+
+                currentRoom = Video.connect(context, connectOptions, roomListener)
+
+            } catch (e: kotlin.Exception) {
+                isConnecting = false
+                errorMessage = "Erro conectar Twilio: ${e.message}"
+            }
+        }
+
+        fun disconnect() {
+            currentRoom?.disconnect()
+            currentRoom = null
+            isConnected = false
+        }
+
+
     // Gerar nome da sala se não fornecido
     val currentRoomName = roomName ?: "sala-${UUID.randomUUID().toString().take(8)}"
 
@@ -120,42 +204,55 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
             val tokenService = Conexao().getTokenService()
             try {
                 val response = tokenService.requestToken(bearer, mapOf("room" to room)).execute()
-                if (response.isSuccessful && response.body() != null) {
-                    val body = response.body()!!
-                    // Tenta extrair token de várias formas
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    // Extrair token_str / identity / room de forma segura
+                    var tokenStr: String? = null
                     var identityResp: String? = null
                     var roomResp: String? = null
 
-                    // Normaliza o campo token que pode vir como String ou como objeto (Map)
-                    val tokenField = body.token
-                    when (tokenField) {
-                        is String -> {
-                            // token field is a plain string (jwt) - we ignore it here; keep identity/room parsing
-                        }
-                        is Map<*, *> -> {
-                            try {
-                                val map = tokenField as Map<*, *>
-                                identityResp = (map["identity"] ?: map["identity_user"] ?: map["Identity"])?.toString()
-                                roomResp = (map["room"] ?: map["Room"])?.toString()
-                            } catch (_: Exception) {
-                                // ignore
+                    // 1) se body.token é JsonElement (objeto ou string)
+                    val tokenElement: JsonElement? = body?.token
+                    if (tokenElement != null) {
+                        try {
+                            if (tokenElement.isJsonPrimitive) {
+                                // token foi retornado como string (caso raro)
+                                tokenStr = tokenElement.asString
+                            } else if (tokenElement.isJsonObject) {
+                                val obj = tokenElement.asJsonObject
+                                if (obj.has("token")) tokenStr = obj.get("token").asString
+                                if (obj.has("identity")) identityResp = obj.get("identity").asString
+                                if (obj.has("room")) roomResp = obj.get("room").asString
+                                // fallback: identity_user etc
+                                if (identityResp == null) {
+                                    if (obj.has("identity_user")) identityResp = obj.get("identity_user").asString
+                                }
                             }
-                        }
-                        else -> {
-                            // other shapes: ignored for now
-                        }
+                        } catch (_: Exception) {}
                     }
 
-                    // fallback para campos diretos no envelope
-                    identityResp = identityResp ?: body.identity
-                    roomResp = roomResp ?: body.room
+                    // 2) fallback para campos diretos no envelope
+                    if (tokenStr == null) {
+                        // às vezes o JWT pode estar dentro de outros campos
+                        tokenStr = body?.identity // (não é comum) - mantenha apenas como fallback
+                    }
+
+                    identityResp = identityResp ?: body?.identity
+                    roomResp = roomResp ?: body?.room
 
                     withContext(Dispatchers.Main) {
-                        identity = identityResp
-                        serverRoom = roomResp ?: currentRoomName
+                        jwtToken = tokenStr
+                        identityState = identityResp
+                        serverRoom = roomResp ?: room
                         loading = false
                     }
 
+                    // se obtivemos jwtToken, conectamos automaticamente
+                    if (!tokenStr.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) {
+                            connectToTwilio(tokenStr, serverRoom ?: room, identityState)
+                        }
+                    }
                 } else {
                     val err = response.errorBody()?.string()
                     withContext(Dispatchers.Main) {
@@ -416,7 +513,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                     if (!errorMessage.isNullOrBlank()) {
                         Text("Erro: $errorMessage", color = Color.Red)
                     }
-                    identity?.let {
+                    identityState?.let {
                         Text("Conectado como: $it", color = Color.White)
                     }
                     serverRoom?.let {
