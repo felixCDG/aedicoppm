@@ -40,24 +40,20 @@ import java.util.UUID
 import com.google.gson.JsonElement
 import com.twilio.video.* // Twilio SDK
 import java.lang.Exception
-import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
 import com.twilio.video.ConnectOptions
 import com.twilio.video.RemoteParticipant
 import com.twilio.video.Room
 import com.twilio.video.TwilioException
 import com.twilio.video.Video
-import tvi.webrtc.VideoSink
 import com.twilio.video.VideoView
 import com.twilio.video.LocalVideoTrack
 import com.twilio.video.LocalAudioTrack
 import com.twilio.video.CameraCapturer
 import com.twilio.video.Camera2Capturer
-
-
+import tvi.webrtc.Camera2Enumerator
 
 
 @SuppressLint("UnrememberedMutableState")
@@ -72,6 +68,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
     var isConnected by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var hasCameraPermission by remember { mutableStateOf(false) }
+    var hasAudioPermission by remember { mutableStateOf(false) }
 
 
     var jwtToken by remember { mutableStateOf<String?>(null) }
@@ -81,13 +78,13 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
 
 
 
-    // Preview da câmera
-    val remotePreviewView = remember { PreviewView(context) }
 
-    val previewView = remember { PreviewView(context) }
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    // Preview da câmera
+    // PreviewView para CameraX (mostra preview local do CameraX)
+
 
     // --- Twilio render views (local e remoto) ---
+    // VideoView do Twilio para renderizar tracks (local e remoto)
     val localVideoView = remember { VideoView(context) }    // mostra sua própria câmera (opcional)
     val remoteVideoView = remember { VideoView(context) }   // mostra a câmera do outro participante
 
@@ -110,6 +107,18 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
         }
     }
 
+    // Launcher para solicitar permissão do microfone
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasAudioPermission = isGranted
+        if (isGranted) {
+            Log.i("VIDEOCHAMADA", "Permissão do microfone concedida")
+        } else {
+            Log.e("VIDEOCHAMADA", "Permissão do microfone negada")
+        }
+    }
+
     // Verificar permissão da câmera
     LaunchedEffect(Unit) {
         hasCameraPermission = ContextCompat.checkSelfPermission(
@@ -117,77 +126,60 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
             Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
 
+        hasAudioPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
         if (!hasCameraPermission) {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+        if (!hasAudioPermission) {
+            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
     // Configurar câmera quando permissão for concedida
-    LaunchedEffect(hasCameraPermission, isCameraOff) {
-        if (hasCameraPermission && !isCameraOff) {
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = CameraPreview.Builder().build()
-            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
 
-            try {
-                cameraProvider.unbindAll()
-                preview.setSurfaceProvider(previewView.surfaceProvider)
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    cameraSelector,
-                    preview
-                )
-                Log.i("VIDEOCHAMADA", "Câmera configurada com sucesso")
-            } catch (e: Exception) {
-                Log.e("VIDEOCHAMADA", "Erro ao configurar câmera: ${e.message}")
-            }
-        } else if (isCameraOff) {
-            val cameraProvider = cameraProviderFuture.get()
-            cameraProvider.unbindAll()
-        }
-    }
 
     LaunchedEffect(hasCameraPermission) {
         if (hasCameraPermission) {
             try {
                 if (localVideoTrack == null) {
 
-                    // Capturador de câmera correto na versão 7.9.1
+                    // CORREÇÃO: descobrir o ID correto da camera frontal
+                    val enumerator = Camera2Enumerator(context)
+                    val cameraId = enumerator.deviceNames.firstOrNull {
+                        enumerator.isFrontFacing(it)
+                    } ?: throw Exception("Nenhuma câmera frontal encontrada")
+
                     val cameraCapturer = Camera2Capturer(
                         context,
-                        "front" // <<=== É ISSO AQUI
+                        cameraId,   // agora usa o ID REAL
+                        null
                     )
 
-                    // Cria a track de vídeo local
                     localVideoTrack = LocalVideoTrack.create(
                         context,
                         true,
                         cameraCapturer
                     )
 
-                    // Renderiza a própria câmera
                     localVideoTrack?.addSink(localVideoView)
 
-                    Log.i("VIDEOCHAMADA", "LocalVideoTrack criada")
                 }
 
                 if (localAudioTrack == null) {
                     localAudioTrack = LocalAudioTrack.create(context, true)
-                    Log.i("VIDEOCHAMADA", "LocalAudioTrack criada")
                 }
 
             } catch (e: Exception) {
                 Log.e("VIDEOCHAMADA", "Erro criando local tracks: ${e.message}")
                 errorMessage = "Erro ao iniciar áudio/vídeo locais: ${e.message}"
             }
-        } else {
-            localVideoTrack?.release()
-            localVideoTrack = null
-
-            localAudioTrack?.release()
-            localAudioTrack = null
         }
     }
+
 
 
     // Reage às mudanças de toggle e habilita/desabilita tracks reais
@@ -210,6 +202,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
             }
         }
     }
+
 
 
 
@@ -272,7 +265,8 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteVideoTrackPublication: RemoteVideoTrackPublication,
                 remoteVideoTrack: RemoteVideoTrack
             ) {
-                remoteVideoTrack.addSink(remotePreviewView.surfaceProvider as VideoSink)
+                // Renderiza o vídeo remoto no VideoView do Twilio
+                remoteVideoTrack.addSink(remoteVideoView)
             }
 
             override fun onVideoTrackSubscriptionFailed(
@@ -534,8 +528,9 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        // Exibe o vídeo remoto (VideoView do Twilio)
                         AndroidView(
-                            factory = { remotePreviewView },
+                            factory = { remoteVideoView },
                             modifier = Modifier
                                 .size(200.dp)
                                 .clip(CircleShape)
@@ -633,8 +628,9 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                                 }
                             }
                             else -> {
+                                // Exibe o vídeo local (VideoView do Twilio)
                                 AndroidView(
-                                    factory = { previewView },
+                                    factory = { localVideoView },
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .clip(RoundedCornerShape(16.dp))
