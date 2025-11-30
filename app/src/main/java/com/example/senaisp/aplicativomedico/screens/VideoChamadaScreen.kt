@@ -50,6 +50,15 @@ import com.twilio.video.RemoteParticipant
 import com.twilio.video.Room
 import com.twilio.video.TwilioException
 import com.twilio.video.Video
+import tvi.webrtc.VideoSink
+import com.twilio.video.VideoView
+import com.twilio.video.LocalVideoTrack
+import com.twilio.video.LocalAudioTrack
+import com.twilio.video.CameraCapturer
+import com.twilio.video.Camera2Capturer
+
+
+
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
@@ -77,6 +86,15 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
 
     val previewView = remember { PreviewView(context) }
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+
+    // --- Twilio render views (local e remoto) ---
+    val localVideoView = remember { VideoView(context) }    // mostra sua própria câmera (opcional)
+    val remoteVideoView = remember { VideoView(context) }   // mostra a câmera do outro participante
+
+// --- Local tracks (iniciadas quando permissão concedida) ---
+    var localVideoTrack by remember { mutableStateOf<LocalVideoTrack?>(null) }
+    var localAudioTrack by remember { mutableStateOf<LocalAudioTrack?>(null) }
+
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -129,6 +147,218 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
         }
     }
 
+    LaunchedEffect(hasCameraPermission) {
+        if (hasCameraPermission) {
+            try {
+                if (localVideoTrack == null) {
+
+                    // Capturador de câmera correto na versão 7.9.1
+                    val cameraCapturer = Camera2Capturer(
+                        context,
+                        "front" // <<=== É ISSO AQUI
+                    )
+
+                    // Cria a track de vídeo local
+                    localVideoTrack = LocalVideoTrack.create(
+                        context,
+                        true,
+                        cameraCapturer
+                    )
+
+                    // Renderiza a própria câmera
+                    localVideoTrack?.addSink(localVideoView)
+
+                    Log.i("VIDEOCHAMADA", "LocalVideoTrack criada")
+                }
+
+                if (localAudioTrack == null) {
+                    localAudioTrack = LocalAudioTrack.create(context, true)
+                    Log.i("VIDEOCHAMADA", "LocalAudioTrack criada")
+                }
+
+            } catch (e: Exception) {
+                Log.e("VIDEOCHAMADA", "Erro criando local tracks: ${e.message}")
+                errorMessage = "Erro ao iniciar áudio/vídeo locais: ${e.message}"
+            }
+        } else {
+            localVideoTrack?.release()
+            localVideoTrack = null
+
+            localAudioTrack?.release()
+            localAudioTrack = null
+        }
+    }
+
+
+    // Reage às mudanças de toggle e habilita/desabilita tracks reais
+    LaunchedEffect(isCameraOff, isMicMuted, localVideoTrack, localAudioTrack) {
+        // câmera local on/off
+        localVideoTrack?.let { track ->
+            try {
+                track.enable(!isCameraOff) // se SDK tiver enable(Boolean). Caso não exista -> publicar/unpublish
+            } catch (e: Exception) {
+                Log.e("VIDEOCHAMADA", "Não foi possível alternar vídeo: ${e.message}")
+            }
+        }
+
+        // microfone local mudo/desmudo
+        localAudioTrack?.let { at ->
+            try {
+                at.enable(!isMicMuted)
+            } catch (e: Exception) {
+                Log.e("VIDEOCHAMADA", "Não foi possível alternar áudio: ${e.message}")
+            }
+        }
+    }
+
+
+
+    fun setRemoteVideo(participant: RemoteParticipant) {
+        participant.setListener(object : RemoteParticipant.Listener {
+            override fun onAudioTrackPublished(
+                remoteParticipant: RemoteParticipant,
+                remoteAudioTrackPublication: RemoteAudioTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onAudioTrackUnpublished(
+                remoteParticipant: RemoteParticipant,
+                remoteAudioTrackPublication: RemoteAudioTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onAudioTrackSubscribed(
+                remoteParticipant: RemoteParticipant,
+                remoteAudioTrackPublication: RemoteAudioTrackPublication,
+                remoteAudioTrack: RemoteAudioTrack
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onAudioTrackSubscriptionFailed(
+                remoteParticipant: RemoteParticipant,
+                remoteAudioTrackPublication: RemoteAudioTrackPublication,
+                twilioException: TwilioException
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onAudioTrackUnsubscribed(
+                remoteParticipant: RemoteParticipant,
+                remoteAudioTrackPublication: RemoteAudioTrackPublication,
+                remoteAudioTrack: RemoteAudioTrack
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onVideoTrackPublished(
+                remoteParticipant: RemoteParticipant,
+                remoteVideoTrackPublication: RemoteVideoTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onVideoTrackUnpublished(
+                remoteParticipant: RemoteParticipant,
+                remoteVideoTrackPublication: RemoteVideoTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onVideoTrackSubscribed(
+                remoteParticipant: RemoteParticipant,
+                remoteVideoTrackPublication: RemoteVideoTrackPublication,
+                remoteVideoTrack: RemoteVideoTrack
+            ) {
+                remoteVideoTrack.addSink(remotePreviewView.surfaceProvider as VideoSink)
+            }
+
+            override fun onVideoTrackSubscriptionFailed(
+                remoteParticipant: RemoteParticipant,
+                remoteVideoTrackPublication: RemoteVideoTrackPublication,
+                twilioException: TwilioException
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onVideoTrackUnsubscribed(
+                remoteParticipant: RemoteParticipant,
+                remoteVideoTrackPublication: RemoteVideoTrackPublication,
+                remoteVideoTrack: RemoteVideoTrack
+            ) {
+                remoteVideoTrack.removeSink(remoteVideoView)
+            }
+
+
+            override fun onDataTrackPublished(
+                remoteParticipant: RemoteParticipant,
+                remoteDataTrackPublication: RemoteDataTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onDataTrackUnpublished(
+                remoteParticipant: RemoteParticipant,
+                remoteDataTrackPublication: RemoteDataTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onDataTrackSubscribed(
+                remoteParticipant: RemoteParticipant,
+                remoteDataTrackPublication: RemoteDataTrackPublication,
+                remoteDataTrack: RemoteDataTrack
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onDataTrackSubscriptionFailed(
+                remoteParticipant: RemoteParticipant,
+                remoteDataTrackPublication: RemoteDataTrackPublication,
+                twilioException: TwilioException
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onDataTrackUnsubscribed(
+                remoteParticipant: RemoteParticipant,
+                remoteDataTrackPublication: RemoteDataTrackPublication,
+                remoteDataTrack: RemoteDataTrack
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onAudioTrackEnabled(
+                remoteParticipant: RemoteParticipant,
+                remoteAudioTrackPublication: RemoteAudioTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onAudioTrackDisabled(
+                remoteParticipant: RemoteParticipant,
+                remoteAudioTrackPublication: RemoteAudioTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onVideoTrackEnabled(
+                remoteParticipant: RemoteParticipant,
+                remoteVideoTrackPublication: RemoteVideoTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onVideoTrackDisabled(
+                remoteParticipant: RemoteParticipant,
+                remoteVideoTrackPublication: RemoteVideoTrackPublication
+            ) {
+                TODO("Not yet implemented")
+            }
+        })
+    }
 
 
         var currentRoom: Room? = null
@@ -139,6 +369,10 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
 
                 val connectOptions = ConnectOptions.Builder(jwt)
                     .roomName(roomName)
+                    .apply {
+                        localAudioTrack?.let { this.audioTracks(listOf(it)) }
+                        localVideoTrack?.let { this.videoTracks(listOf(it)) }
+                    }
                     .build()
 
                 val roomListener = object : Room.Listener {
@@ -171,7 +405,10 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                         currentRoom = null
                     }
 
-                    override fun onParticipantConnected(room: Room, participant: RemoteParticipant) {}
+                    override fun onParticipantConnected(room: Room, participant: RemoteParticipant) {
+                        Log.i("TWILIO", "Participante entrou: ${participant.identity}")
+                        setRemoteVideo(participant)
+                    }
                     override fun onParticipantDisconnected(room: Room, participant: RemoteParticipant) {}
                     override fun onRecordingStarted(room: Room) {}
                     override fun onRecordingStopped(room: Room) {}
@@ -297,19 +534,13 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(
+                        AndroidView(
+                            factory = { remotePreviewView },
                             modifier = Modifier
                                 .size(200.dp)
-                                .background(Color.Black, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Dr. Souza",
-                                tint = Color.White,
-                                modifier = Modifier.size(120.dp)
-                            )
-                        }
+                                .clip(CircleShape)
+                        )
+
 
                         Spacer(modifier = Modifier.height(24.dp))
 
