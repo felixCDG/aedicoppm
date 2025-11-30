@@ -212,14 +212,14 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteParticipant: RemoteParticipant,
                 remoteAudioTrackPublication: RemoteAudioTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onAudioTrackUnpublished(
                 remoteParticipant: RemoteParticipant,
                 remoteAudioTrackPublication: RemoteAudioTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onAudioTrackSubscribed(
@@ -227,7 +227,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteAudioTrackPublication: RemoteAudioTrackPublication,
                 remoteAudioTrack: RemoteAudioTrack
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onAudioTrackSubscriptionFailed(
@@ -235,7 +235,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteAudioTrackPublication: RemoteAudioTrackPublication,
                 twilioException: TwilioException
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onAudioTrackUnsubscribed(
@@ -243,21 +243,21 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteAudioTrackPublication: RemoteAudioTrackPublication,
                 remoteAudioTrack: RemoteAudioTrack
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onVideoTrackPublished(
                 remoteParticipant: RemoteParticipant,
                 remoteVideoTrackPublication: RemoteVideoTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onVideoTrackUnpublished(
                 remoteParticipant: RemoteParticipant,
                 remoteVideoTrackPublication: RemoteVideoTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onVideoTrackSubscribed(
@@ -274,7 +274,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteVideoTrackPublication: RemoteVideoTrackPublication,
                 twilioException: TwilioException
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onVideoTrackUnsubscribed(
@@ -290,14 +290,14 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteParticipant: RemoteParticipant,
                 remoteDataTrackPublication: RemoteDataTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onDataTrackUnpublished(
                 remoteParticipant: RemoteParticipant,
                 remoteDataTrackPublication: RemoteDataTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onDataTrackSubscribed(
@@ -305,7 +305,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteDataTrackPublication: RemoteDataTrackPublication,
                 remoteDataTrack: RemoteDataTrack
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onDataTrackSubscriptionFailed(
@@ -313,7 +313,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteDataTrackPublication: RemoteDataTrackPublication,
                 twilioException: TwilioException
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onDataTrackUnsubscribed(
@@ -321,35 +321,35 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                 remoteDataTrackPublication: RemoteDataTrackPublication,
                 remoteDataTrack: RemoteDataTrack
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onAudioTrackEnabled(
                 remoteParticipant: RemoteParticipant,
                 remoteAudioTrackPublication: RemoteAudioTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onAudioTrackDisabled(
                 remoteParticipant: RemoteParticipant,
                 remoteAudioTrackPublication: RemoteAudioTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onVideoTrackEnabled(
                 remoteParticipant: RemoteParticipant,
                 remoteVideoTrackPublication: RemoteVideoTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onVideoTrackDisabled(
                 remoteParticipant: RemoteParticipant,
                 remoteVideoTrackPublication: RemoteVideoTrackPublication
             ) {
-                TODO("Not yet implemented")
+
             }
         })
     }
