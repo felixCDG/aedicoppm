@@ -69,6 +69,8 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var hasCameraPermission by remember { mutableStateOf(false) }
     var hasAudioPermission by remember { mutableStateOf(false) }
+    var hasCameraPermissionRemote by remember { mutableStateOf(true) }
+    var isRemoteCameraOff by remember { mutableStateOf(false) }
 
 
     var jwtToken by remember { mutableStateOf<String?>(null) }
@@ -513,69 +515,89 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
                     .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
                 // Dois cards empilhados com tamanho igual usando weight
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    // Conteúdo do card do médico
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Exibe o vídeo remoto (VideoView do Twilio)
-                        AndroidView(
-                            factory = { remoteVideoView },
-                            modifier = Modifier
-                                .size(200.dp)
-                                .clip(CircleShape)
-                        )
+                Box(modifier = Modifier.fillMaxWidth()
+                    .weight(1f)) {
 
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Text(
-                            text = "Dr. Souza",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = when {
-                                isConnecting -> "Conectando..."
-                                isConnected -> "Conectado - Sala: ${serverRoom ?: currentRoomName}"
-                                errorMessage != null -> "Erro na conexão"
-                                else -> "Aguardando conexão"
-                            },
-                            fontSize = 14.sp,
-                            color = when {
-                                isConnecting -> Color.Yellow
-                                isConnected -> Color.Green
-                                errorMessage != null -> Color.Red
-                                else -> Color.Gray
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            IconButton(onClick = { /* Opções */ }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Mais opções", tint = Color.Gray)
+                    when {
+                        !hasCameraPermissionRemote -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Gray, RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        Icons.Default.Warning,
+                                        contentDescription = "Sem permissão",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(text = "Sem permissão de câmera", color = Color.White)
+                                }
                             }
                         }
+
+                        isRemoteCameraOff -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        Icons.Default.VideocamOff,
+                                        contentDescription = "Câmera desligada",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(text = "Câmera desligada", color = Color.White)
+                                }
+                            }
+                        }
+
+                        else -> {
+                            // Exibe o vídeo REMOTO ocupando 100% do card
+                            AndroidView(
+                                factory = { remoteVideoView },
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(16.dp))
+                            )
+                        }
+                    }
+
+                    // Nome e status no canto superior esquerdo do card (MÉDICO)
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "Médico",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White
+                        )
+                        Text(
+                            text = when {
+                                !hasCameraPermissionRemote -> "Sem permissão"
+                                isRemoteCameraOff -> "Câmera desligada"
+                                else -> "Câmera ligada"
+                            },
+                            fontSize = 12.sp,
+                            color = when {
+                                !hasCameraPermissionRemote -> Color.Yellow
+                                isRemoteCameraOff -> Color.Red
+                                else -> Color.Green
+                            }
+                        )
                     }
                 }
+
 
                 Spacer(modifier = Modifier.height(16.dp))
 
