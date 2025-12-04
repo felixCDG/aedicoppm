@@ -42,6 +42,61 @@ import kotlinx.coroutines.isActive
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+
+// Helpers de formatação de data/hora compartilhados (top-level)
+private val displayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+    .withZone(ZoneId.systemDefault())
+
+fun formatIsoToDisplay(iso: String?): String {
+    if (iso.isNullOrBlank()) return ""
+
+    // Tenta várias estratégias de parse para cobrir formatos comuns retornados pela API
+    try {
+        // 1) Instant/ISO_INSTANT (ex: 2025-12-04T05:56:10.000Z)
+        try {
+            val instant = Instant.parse(iso)
+            return displayFormatter.format(instant)
+        } catch (_: Exception) {
+            // continue
+        }
+
+        // 2) OffsetDateTime (ex: 2025-12-04T05:56:10+00:00)
+        try {
+            val odt = java.time.OffsetDateTime.parse(iso)
+            return displayFormatter.format(odt.toInstant())
+        } catch (_: Exception) {
+            // continue
+        }
+
+        // 3) LocalDateTime com alguns padrões comuns (sem fuso explicitamente)
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm"
+        )
+        for (p in patterns) {
+            try {
+                val dtf = DateTimeFormatter.ofPattern(p)
+                val ldt = java.time.LocalDateTime.parse(iso, dtf)
+                return displayFormatter.format(ldt.atZone(ZoneId.systemDefault()).toInstant())
+            } catch (_: Exception) {
+                // tentar próximo padrão
+            }
+        }
+    } catch (_: Exception) {
+        // fallback abaixo
+    }
+
+    // fallback: retorna a string original se não conseguir parsear
+    return iso
+}
+
+fun nowFormatted(): String = displayFormatter.format(Instant.now())
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -290,7 +345,7 @@ fun ChatIndividualScreen(
                                 idChat = chatId.toIntOrNull() ?: 0,
                                 idUser = medicoUserId.toIntOrNull() ?: -1,
                                 nomeUser = "Você",
-                                createdAt = ""
+                                createdAt = nowFormatted() // usa a data/hora atual formatada
                             )
                             mensagens = mensagens + localMessage
                             mensagemTexto = ""
@@ -376,7 +431,7 @@ fun MessageRow(msg: MessageItem) {
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(text = msg.conteudo ?: "", color = Color.Black)
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text(text = msg.createdAt ?: "", fontSize = 12.sp, color = Color.Gray)
+                        Text(text = formatIsoToDisplay(msg.createdAt), fontSize = 12.sp, color = Color.Gray)
                     }
                 }
             }
@@ -397,7 +452,7 @@ fun MessageRow(msg: MessageItem) {
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(text = msg.conteudo ?: "")
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text(text = msg.createdAt ?: "", fontSize = 12.sp, color = Color.Gray)
+                        Text(text = formatIsoToDisplay(msg.createdAt), fontSize = 12.sp, color = Color.Gray)
                     }
                 }
             }
