@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.senaisp.aplicativomedico.screens.CadastroUser
+import com.example.senaisp.aplicativomedico.screens.ContatosScreen
 import com.example.senaisp.aplicativomedico.screens.VideoChamadaScreen
 import com.example.senaisp.aplicativomedico.screens.Loginscreen
 import com.example.senaisp.aplicativomedico.screens.PerfilMedic
@@ -38,6 +39,7 @@ class MainActivity : ComponentActivity() {
                 composable(route = "cadastro"){ CadastroUser(navegacao) }
                 composable(route = "perfil"){ PerfilMedic(navegacao) }
                 composable(route = "home"){ HomeScreen(navegacao) }
+                composable(route = "contatos"){ ContatosScreen(navegacao) }
                 composable(route = "consulta"){ SalaConsulta(navegacao) }
                 composable(route = "chamada"){ VideoChamadaScreen(navegacao) }
                 // Screen to create a call (optional route if you want to navigate there)

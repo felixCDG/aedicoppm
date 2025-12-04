@@ -434,7 +434,7 @@ fun VideoChamadaScreen(navegacao: NavHostController?, roomName: String? = null) 
         errorMessage = null
         coroutineScope.launch(Dispatchers.IO) {
             val bearer = SessionManager.getBearerToken(context)
-            val tokenService = Conexao().getTokenService()
+            val tokenService = Conexao.getTokenService()
             try {
                 val response = tokenService.requestToken(bearer, mapOf("room" to room)).execute()
                 if (response.isSuccessful) {

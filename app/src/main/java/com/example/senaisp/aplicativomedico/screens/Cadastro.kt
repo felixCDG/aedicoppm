@@ -164,7 +164,7 @@ fun Cadastroscreen(navegacao: NavHostController?) {
     var mensagem by remember { mutableStateOf("") }
     var isErro by remember { mutableStateOf(false) }
 
-    val clienteApi = Conexao().getCadastroMedicoService()
+    val clienteApi = Conexao.getCadastroMedicoService()
 
     // --- helper formatting functions (string-based) ---
     fun formatarNome(text: String): String {

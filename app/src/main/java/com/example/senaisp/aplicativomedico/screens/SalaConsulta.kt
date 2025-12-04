@@ -213,7 +213,7 @@ fun CreateCallScreen(navegacao: NavHostController?) {
                                 loading = true
                                 scope.launch(Dispatchers.IO) {
                                     val bearer = SessionManager.getBearerToken(context)
-                                    val chamadaService = Conexao().getChamadaService()
+                                    val chamadaService = Conexao.getChamadaService()
                                     val requestBody = ChamadaRequest(roomName)
                                     try {
                                         val response = chamadaService.criarChamada(bearer, requestBody).execute()

@@ -63,6 +63,9 @@ dependencies {
     // https://mvnrepository.com/artifact/com.squareup.retrofit2/converter-gson
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
 
+    // OkHttp logging interceptor (necessário para HttpLoggingInterceptor)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
     implementation("androidx.navigation:navigation-compose:2.9.3")
 
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.6")

@@ -100,7 +100,7 @@ fun PerfilMedic(navegacao: NavHostController?) {
         // ID fixo que você sabe que existe no banco
         val idMedico = SessionManager.getMedicoId(context)
 
-        val call = Conexao()
+        val call = Conexao
             .getCadastroMedicoService()
             .getMedicoById(1)
 

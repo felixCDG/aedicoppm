@@ -70,7 +70,7 @@ fun CadastroUser(navegacao: NavHostController?) {
     var passwordError = remember { mutableStateOf("") }
     var showPasswordError = remember { mutableStateOf(false) }
     
-    val clienteApi = Conexao().getCadastroService()
+    val clienteApi = Conexao.getCadastroService()
     val context = LocalContext.current
     
     // Função para capitalizar nome (primeira letra de cada palavra)

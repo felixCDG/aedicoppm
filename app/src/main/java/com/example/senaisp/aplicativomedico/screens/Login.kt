@@ -72,7 +72,7 @@ fun Loginscreen(navegacao: NavHostController?) {
     var emailError = remember { mutableStateOf("") }
     var showEmailError = remember { mutableStateOf(false) }
     
-    val clienteApi = Conexao().getLoginService()
+    val clienteApi = Conexao.getLoginService()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
