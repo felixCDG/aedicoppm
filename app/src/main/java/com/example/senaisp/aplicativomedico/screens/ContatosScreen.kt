@@ -1,5 +1,7 @@
 package com.example.senaisp.aplicativomedico.screens
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,9 +27,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import com.example.senaisp.aplicativomedico.repository.ContatoRepository
 import com.example.senaisp.aplicativomedico.service.Conexao
+import com.example.senaisp.aplicativomedico.model.DadosChat
+import com.example.senaisp.aplicativomedico.model.ResponseChat
 import com.example.senaisp.aplicativomedico.service.SessionManager
 import com.example.senaisp.aplicativomedico.ui.viewmodel.ContatoViewModel
 import com.example.senaisp.aplicativomedico.ui.viewmodel.UiState
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -183,7 +190,119 @@ fun ContatosScreen(
                                 ContatoItem(
                                     nome = contato.nomeResponsavel ?: contato.nomeUser ?: "",
                                     tipo = contato.cpf ?: contato.telefone ?: "Contato",
-                                    onClick = { /* navegar, abrir detalhes, etc */ }
+                                    onClick = {
+                                        // Salva o ID do usuário exibido no card
+                                        // Se houver um idUser, consideramos que o nome exibido é do usuário
+                                        val contatoId = contato.idUser?.toString() ?: contato.idResponsavel?.toString() ?: ""
+                                        val contatoNome = contato.nomeResponsavel ?: contato.nomeUser ?: ""
+
+                                        // Não sobrescrever o userId salvo no login com o id do contato.
+                                        // Apenas salvamos o id do responsável (se existir) em seu campo específico.
+                                        if (contato.idResponsavel != null) {
+                                            SessionManager.saveResponsavelId(context, contato.idResponsavel)
+                                            Log.d("CONTATOS_SCREEN", "Salvou responsavelId: ${contato.idResponsavel}")
+                                            val storedRespId = SessionManager.getResponsavelId(context)
+                                            Log.d("CONTATOS_SCREEN", "ResponsavelId armazenado (getResponsavelId): $storedRespId")
+                                        }
+
+                                        // Recupera o id do médico (se houver) e registra no log e salva (não sobrescreve se -1)
+                                        val medicoId = SessionManager.getMedicoId(context)
+                                        Log.d("CONTATOS_SCREEN", "MedicoId atual (SessionManager.getMedicoId): $medicoId")
+
+                                        // Recupera o idUser salvo no login e usaremos esse id como user1 ao criar o chat
+                                        val userId = SessionManager.getUserId(context)
+                                        Log.d("CONTATOS_SCREEN", "UserId atual (SessionManager.getUserId): $userId")
+
+                                        // Antes usávamos getMedicoUserId; agora enviamos o idUser salvo no login
+                                        // val medicoUserId = SessionManager.getMedicoUserId(context)
+                                        // Log.d("CONTATOS_SCREEN", "MedicoUserId atual (SessionManager.getMedicoUserId): $medicoUserId")
+
+                                        // Navega para o chat individual passando id do contato, nome e o medicoId + userId (nome deve ser codificado)
+                                        if (contatoId.isNotBlank()) {
+                                            // Build DadosChat: userId (do login) será user1, contato user id é user2
+                                            val userIdInt = userId
+                                            val contatoUserIdInt = contato.idUser ?: contato.idResponsavel ?: -1
+
+                                            if (userIdInt == -1) {
+                                                Log.w("CONTATOS_SCREEN", "UserId (salvo no login) não disponível. Continuando sem criação de chat.")
+                                                val encodedName = Uri.encode(contatoNome)
+                                                navController?.navigate("chatin/$contatoId/$encodedName/$medicoId/$userId/0")
+                                                return@ContatoItem
+                                            }
+
+                                            val dadosChat = DadosChat(
+                                                userId1 = userIdInt,
+                                                userId2 = contatoUserIdInt
+                                            )
+
+                                            // Chama o serviço de cadastro de chat
+                                            val cadastroService = Conexao.getCadastrarChatService()
+                                            cadastroService.cadastrarChat(dadosChat).enqueue(object : Callback<ResponseChat> {
+                                                override fun onResponse(call: Call<ResponseChat>, response: Response<ResponseChat>) {
+                                                    if (response.isSuccessful) {
+                                                        val body = response.body()
+                                                        if (body != null) {
+                                                            Log.d("CONTATOS_SCREEN", "Resposta cadastro chat: ${body}")
+                                                            if (body.status_code == 201) {
+                                                                val chatId = body.chat.id_chat
+                                                                // Agora busca as mensagens do chat criado
+                                                                val chatMessageService = Conexao.getChatMessageService()
+                                                                chatMessageService.getMessagesByChatId(chatId).enqueue(object : Callback<com.example.senaisp.aplicativomedico.model.ResponseMensagens> {
+                                                                    override fun onResponse(call: Call<com.example.senaisp.aplicativomedico.model.ResponseMensagens>, resp: Response<com.example.senaisp.aplicativomedico.model.ResponseMensagens>) {
+                                                                        if (resp.isSuccessful) {
+                                                                            val respBody = resp.body()
+                                                                            if (respBody != null) {
+                                                                                if (respBody.status_code == 200) {
+                                                                                    val messages = respBody.mensagens
+                                                                                    Log.d("CONTATOS_SCREEN", "Mensagens obtidas para chat $chatId: $messages")
+                                                                                } else {
+                                                                                    Log.w("CONTATOS_SCREEN", "GET mensagens retornou status_code != 200: ${respBody.status_code}")
+                                                                                }
+                                                                            } else {
+                                                                                Log.w("CONTATOS_SCREEN", "GET mensagens: corpo da resposta é nulo")
+                                                                            }
+                                                                        } else {
+                                                                            Log.w("CONTATOS_SCREEN", "Falha ao obter mensagens: ${resp.code()} - ${resp.message()}")
+                                                                        }
+                                                                        // Após tentar obter mensagens (sucesso ou falha), navegamos para a tela de chat
+                                                                        val encodedName = Uri.encode(contatoNome)
+                                                                        navController?.navigate("chatin/$contatoId/$encodedName/$medicoId/$userId/$chatId")
+                                                                    }
+
+                                                                    override fun onFailure(call: Call<com.example.senaisp.aplicativomedico.model.ResponseMensagens>, t: Throwable) {
+                                                                        Log.e("CONTATOS_SCREEN", "Erro na chamada de mensagens: ${t.message}")
+                                                                        val encodedName = Uri.encode(contatoNome)
+                                                                        navController?.navigate("chatin/$contatoId/$encodedName/$medicoId/$userId/$chatId")
+                                                                    }
+                                                                })
+                                                            } else {
+                                                                Log.w("CONTATOS_SCREEN", "Cadastro de chat retornou status_code != 201: ${body.status_code}")
+                                                                val encodedName = Uri.encode(contatoNome)
+                                                                // sem chatId disponível, navegamos com chatId = 0
+                                                                navController?.navigate("chatin/$contatoId/$encodedName/$medicoId/$userId/0")
+                                                            }
+                                                        } else {
+                                                            Log.e("CONTATOS_SCREEN", "Resposta vazia ao cadastrar chat")
+                                                            val encodedName = Uri.encode(contatoNome)
+                                                            navController?.navigate("chatin/$contatoId/$encodedName/$medicoId/$userId/0")
+                                                        }
+                                                    } else {
+                                                        Log.e("CONTATOS_SCREEN", "Falha na requisição de cadastro de chat: ${response.code()} - ${response.message()}")
+                                                        val encodedName = Uri.encode(contatoNome)
+                                                        navController?.navigate("chatin/$contatoId/$encodedName/$medicoId/$userId/0")
+                                                    }
+                                                }
+
+                                                override fun onFailure(call: Call<ResponseChat>, t: Throwable) {
+                                                    Log.e("CONTATOS_SCREEN", "Erro ao cadastrar chat: ${t.message}")
+                                                    val encodedName = Uri.encode(contatoNome)
+                                                    navController?.navigate("chatin/$contatoId/$encodedName/$medicoId/$userId/0")
+                                                }
+                                            })
+
+                                        }
+
+                                    }
                                 )
                             }
                         }

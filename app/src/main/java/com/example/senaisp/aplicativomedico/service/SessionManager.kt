@@ -14,6 +14,7 @@ object SessionManager {
     private const val KEY_ITEM_IDS = "key_item_ids"
 
     private const val KEY_MEDICO_ID = "key_medico_id"
+    private const val KEY_MEDICO_USER_ID = "key_medico_user_id"
 
     // ------------------- USER ID -------------------
     fun saveUserId(context: Context, userId: Int) {
@@ -137,6 +138,25 @@ object SessionManager {
     fun clearMedicoId(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().remove(KEY_MEDICO_ID).apply()
+    }
+
+    // ------------------- MEDICO USER ID -------------------
+    fun saveMedicoUserId(context: Context, medicoUserId: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_MEDICO_USER_ID, medicoUserId).apply()
+        Log.d("SESSION_MANAGER", "✅ medicoUserId salvo: $medicoUserId")
+    }
+
+    fun getMedicoUserId(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val id = prefs.getInt(KEY_MEDICO_USER_ID, -1)
+        Log.d("SESSION_MANAGER", "🔍 recuperando medicoUserId: $id")
+        return id
+    }
+
+    fun clearMedicoUserId(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove(KEY_MEDICO_USER_ID).apply()
     }
 
     // ------------------- CLEAR ALL -------------------

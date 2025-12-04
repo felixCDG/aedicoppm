@@ -57,5 +57,16 @@ object Conexao {
         return conexao.create(BuscarContatoInterface::class.java)
     }
 
+    fun getCadastrarChatService(): CadastroChat {
+        return conexao.create(CadastroChat::class.java)
+    }
+
+    fun getChatMessageService(): ChatMessageService {
+        return conexao.create(ChatMessageService::class.java)
+    }
+
+    fun getMessageService(): CadastroMensagen {
+        return conexao.create(CadastroMensagen::class.java)
+    }
 
 }

@@ -497,6 +497,8 @@ fun Cadastroscreen(navegacao: NavHostController?) {
 
                                 SessionManager.saveUserId(context = context, userId = response.data.id_user)
                                 SessionManager.saveMedicoId(context, response.data.id_medico)
+                                // Salva também o id de usuário associado ao médico (para enviar ao chat)
+                                SessionManager.saveMedicoUserId(context, response.data.id_user)
 
                                 withContext(Dispatchers.Main) {
                                     navegacao?.navigate("perfil")

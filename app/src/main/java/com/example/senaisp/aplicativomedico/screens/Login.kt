@@ -79,7 +79,6 @@ fun Loginscreen(navegacao: NavHostController?) {
     // Função para validar email
     fun validateEmail(email: String): String {
         return when {
-            email.length < 10 -> "Email deve ter pelo menos 10 caracteres"
             !email.endsWith("@gmail.com") -> "Email deve terminar com @gmail.com"
             else -> ""
         }
